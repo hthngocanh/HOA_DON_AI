@@ -1,0 +1,13 @@
+
+.git
+.DS_Store
+.venv
+__pycache__
+*.pyc
+
+data/
+ocr_cache/
+ocr_cache_e1/
+outputs/
+
+.ipynb_checkpoints/

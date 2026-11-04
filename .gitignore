@@ -5,3 +5,30 @@ __pycache__/
 .ipynb_checkpoints/
 .DS_Store
 .env
+# Dataset and downloaded repositories
+data/
+downloads/
+
+# Generated outputs and caches
+outputs/
+orc_cache/
+orc_cache_e1/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Dataset and downloaded repositories
+data/
+downloads/
+
+# Generated outputs and caches
+outputs/
+orc_cache/
+orc_cache_e1/
+
+# Environment files
+.env
+.env.*
+!.env.example
