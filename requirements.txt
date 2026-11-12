@@ -3,6 +3,7 @@ pytesseract==0.3.13 #nhan dien anh tu bill
 opencv-python-headless==4.11.0.86 #ho tro xu ly anh
 Pillow==11.1.0 #doc va thao tac anh
 numpy==2.2.3  #xu ly mang
-pandas==2.2.3. #doc va thao tac du lieu
+pandas==2.2.3 #doc va thao tac du lieu
 matplotlib==3.10.1
 jupyterlab==4.3.5
+                
