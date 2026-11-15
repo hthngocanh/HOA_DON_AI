@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """improved.py - phuong phap cai tien (Nguoi 4). Tu dong sinh tu 04_cai_tien.ipynb."""
 import re
 from datetime import date as _date
@@ -19,6 +20,11 @@ DEFAULT_CFG = dict(
 )
 
 # ================================================================ BASELINE (sao chep tu src/baseline.py cua nguoi 3)
+=======
+import re
+import unicodedata
+
+>>>>>>> 1e8c6cb (htna)
 MONTHS = r"(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*"
 DATE_PATTERNS = [
     r"\b\d{1,2}\s*[/\-.]\s*\d{1,2}\s*[/\-.]\s*\d{2,4}\b",
@@ -27,6 +33,7 @@ DATE_PATTERNS = [
 ]
 DATE_RE = re.compile("|".join(f"(?:{p})" for p in DATE_PATTERNS), re.IGNORECASE)
 AMOUNT_RE = re.compile(r"\d[\d,]*[.,]\s?\d{2}\b")
+<<<<<<< HEAD
 TOTAL_KEYS = ["GRAND TOTAL", "TOTAL ROUNDED", "ROUNDED TOTAL", "NET TOTAL",
               "TOTAL AMOUNT", "AMOUNT DUE", "AMOUNT PAYABLE", "TOTAL"]
 TOTAL_EXCLUDE = re.compile(r"SUB|EXCL|QTY|QUANTITY|SAVING|DISCOUNT|POINT|TOTAL\s*GST|TAX", re.IGNORECASE)
@@ -204,10 +211,61 @@ def extract_total(lines, cfg):
             up = ln.upper().replace(" ", "") if ns else ln.upper()
             if k in up and not excl.search(ln.upper()):
                 amounts = AMOUNT_RE.findall(ln)
+=======
+TOTAL_KEYS = ["GRAND TOTAL", "TOTAL ROUNDED", "ROUNDED TOTAL", "NET TOTAL", "TOTAL AMOUNT", "AMOUNT DUE", "AMOUNT PAYABLE", "TOTAL"]
+TOTAL_EXCLUDE = re.compile(r"SUB|EXCL|QTY|QUANTITY|SAVING|DISCOUNT|POINT|TOTAL\s*GST|TAX", re.IGNORECASE)
+ADDR_KW = re.compile(r"\b(JALAN|JLN|TAMAN|TMN|LOT|NO|BANDAR|KAWASAN|SELANGOR|JOHOR|KUALA LUMPUR|KL|PETALING|SHAH ALAM|KLANG|CHERAS|PAHANG|PENANG|WILAYAH)\b", re.IGNORECASE)
+POSTCODE = re.compile(r"\b\d{5}\b")
+ADDR_STOP = re.compile(r"\b(TEL|FAX|GST|INVOICE|RECEIPT|DATE|CASH|BILL|TAX|DOC|CASHIER)\b", re.IGNORECASE)
+
+COMPANY_HINTS = (
+    "sdn", "bhd", "enterprise", "trading", "mart", "store", "restaurant",
+    "cafe", "machinery", "gift", "home", "market", "supermarket", "shop",
+)
+ADDRESS_HINTS = (
+    "jalan", "jln", "street", "road", "lorong", "taman", "lot",
+    "selangor", "johor", "klang", "kuala lumpur", "penang", "perak", "melaka",
+)
+NON_COMPANY = re.compile(r"\b(invoice|receipt|cashier|tel|telephone|phone|fax|date|time|member|cash bill|tax invoice)\b", re.I)
+DATE_LIKE = re.compile(r"\b\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}\b")
+COMPANY_POSTCODE = re.compile(r"\b\d{5}\b")
+
+
+def _get_lines(ocr_text: str) -> list[str]:
+    if not isinstance(ocr_text, str):
+        return []
+    return [line.strip() for line in ocr_text.split("\n") if line.strip()]
+
+
+def _find_company_base(lines: list[str]):
+    for i, line in enumerate(lines[:5]):
+        if sum(char.isalpha() for char in line) >= 3:
+            return line, i
+    return None, -1
+
+
+def _find_date(lines: list[str]):
+    for line in lines:
+        if "DATE" in line.upper():
+            match = DATE_RE.search(line)
+            if match:
+                return match.group(0).strip()
+    match = DATE_RE.search("\n".join(lines))
+    return match.group(0).strip() if match else None
+
+
+def _find_total(lines: list[str]):
+    for key in TOTAL_KEYS:
+        for i, line in enumerate(lines):
+            upper = line.upper()
+            if key in upper and not TOTAL_EXCLUDE.search(upper):
+                amounts = AMOUNT_RE.findall(line)
+>>>>>>> 1e8c6cb (htna)
                 if not amounts and i + 1 < len(lines):
                     amounts = AMOUNT_RE.findall(lines[i + 1])
                 if amounts:
                     return amounts[-1].replace(" ", "")
+<<<<<<< HEAD
     if cfg["total_pos"]:
         n = len(lines)
         cands = []
@@ -456,3 +514,71 @@ def extract_improved(ocr_text, cfg=None):
 
 def extract_frozen(ocr_text, path=None):
     return extract(ocr_text, load_frozen_cfg(path))
+=======
+    return None
+
+
+def _find_address(lines: list[str], company_idx: int):
+    if company_idx < 0:
+        return None
+    parts = []
+    for line in lines[company_idx + 1 : company_idx + 9]:
+        if ADDR_STOP.search(line):
+            break
+        if ADDR_KW.search(line) or POSTCODE.search(line):
+            parts.append(line)
+    return " ".join(parts) if parts else None
+
+
+def clean_company_line(value: str) -> str:
+    value = unicodedata.normalize("NFKC", str(value))
+    return re.sub(r"\s+", " ", value).strip(" \t|:;,-")
+
+
+def company_candidate(lines: list[str]):
+    candidates = []
+    for i, original in enumerate(lines[:8]):
+        line = clean_company_line(original)
+        if not (3 <= len(line) <= 90):
+            continue
+        if NON_COMPANY.search(line) or DATE_LIKE.search(line) or COMPANY_POSTCODE.search(line):
+            continue
+        if sum(char.isalpha() for char in line) < 3:
+            continue
+        low = line.lower()
+        score = 0.0
+        if any(hint in low for hint in COMPANY_HINTS):
+            score += 2.5
+        tokens = re.findall(r"[A-Za-z]{2,}", line)
+        if len(tokens) >= 2:
+            score += 0.8
+        score += max(0.0, 0.7 - 0.12 * i)
+        if any(hint in low for hint in ADDRESS_HINTS):
+            score -= 2.0
+        if re.search(r"\b(rm|qty|amount|price|total)\b", low):
+            score -= 1.5
+        candidates.append((score, -i, line))
+    if not candidates:
+        return None
+    candidates.sort(reverse=True)
+    return candidates[0][2]
+
+
+def extract_improved(ocr_text: str) -> dict:
+    lines = _get_lines(ocr_text)
+    base_company, company_idx = _find_company_base(lines)
+
+    clean_lines = [
+        clean_company_line(line)
+        for line in str(ocr_text or "").replace("\x0c", "\n").splitlines()
+        if clean_company_line(line)
+    ]
+    company = company_candidate(clean_lines) or base_company
+
+    return {
+        "company": company if company else None,
+        "date": _find_date(lines),
+        "address": _find_address(lines, company_idx),
+        "total": _find_total(lines),
+    }
+>>>>>>> 1e8c6cb (htna)
