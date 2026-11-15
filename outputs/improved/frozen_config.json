@@ -1,0 +1,28 @@
+{
+  "cfg": {
+    "clean_text": false,
+    "clean_date": true,
+    "date_v2": true,
+    "clean_amount": true,
+    "total_kw": true,
+    "total_nospace": false,
+    "total_gstcut": false,
+    "total_pos": true,
+    "company_v2": true,
+    "addr_v2": true,
+    "addr_merge": true
+  },
+  "selected_on": "train",
+  "min_gain": 0.005,
+  "n_train": 501,
+  "n_validation": 125,
+  "ocr_source": "original (gray+resize2x)",
+  "ocr": {
+    "steps": [
+      "gray",
+      "resize2"
+    ],
+    "tesseract_config": "--oem 3 --psm 6",
+    "lang": "eng"
+  }
+}

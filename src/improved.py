@@ -326,6 +326,7 @@ def extract(text, cfg=None):
 
 
 
+
 # ---- tien xu ly anh + OCR (giong 02_ocr.ipynb cua nguoi 1: Tesseract, --oem 3 --psm 6, lang eng) ----
 OCR_CONFIG = "--oem 3 --psm 6"
 REF_STEPS = ["gray", "resize2"]      # dung nhu OCR CSV cua nguoi 1: grayscale + phong 2x (INTER_CUBIC)
@@ -430,16 +431,28 @@ def exact(pred, gold, field):
     if is_missing(pred) or is_missing(gold): return 0
     return int(NORM[field](pred) == NORM[field](gold))
 
-def load_frozen_cfg(path="outputs/improved/frozen_config.json"):
-    return _json.loads(_Path(path).read_text(encoding="utf-8"))["cfg"]
+_FROZEN_DEFAULT = _Path(__file__).resolve().parents[1] / "outputs" / "improved" / "frozen_config.json"
 
-def load_frozen_ocr_steps(path="outputs/improved/frozen_config.json"):
-    return _json.loads(_Path(path).read_text(encoding="utf-8")).get("ocr", {}).get("steps", REF_STEPS)
+def _frozen(path=None):
+    p = _Path(path) if path else _FROZEN_DEFAULT
+    return _json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
 
-def ocr_frozen(pil_image, path="outputs/improved/frozen_config.json"):
+def load_frozen_cfg(path=None):
+    """Cau hinh dong bang; neu chua co file (chua chot) thi tam dung TAT CA co bat de demo chay duoc."""
+    cfg = _frozen(path).get("cfg")
+    return cfg if cfg else {k: True for k in DEFAULT_CFG}
+
+def load_frozen_ocr_steps(path=None):
+    return _frozen(path).get("ocr", {}).get("steps", REF_STEPS)
+
+def ocr_frozen(pil_image, path=None):
     """Anh (PIL) -> van ban OCR bang dung buoc tien xu ly da dong bang."""
     return ocr_image(pil_image, load_frozen_ocr_steps(path))
 
-def extract_frozen(ocr_text, path="outputs/improved/frozen_config.json"):
-    """Phuong phap cai tien voi cau hinh DONG BANG. Tra ve dict gia tri GOC (chua chuan hoa)."""
+def extract_improved(ocr_text, cfg=None):
+    """Ham cho demo.py/Nguoi 5: van ban OCR -> dict 4 truong {company, date, address, total} (gia tri GOC;
+    truong khong tim thay = None). Dung cau hinh dong bang trong outputs/improved/frozen_config.json."""
+    return extract(ocr_text, cfg if cfg is not None else load_frozen_cfg())
+
+def extract_frozen(ocr_text, path=None):
     return extract(ocr_text, load_frozen_cfg(path))

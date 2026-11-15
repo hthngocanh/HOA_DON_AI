@@ -1,0 +1,5 @@
+﻿split,field,baseline_F1,cai_tien_F1,chenh_lech
+train,company,0.5143,0.7124,0.1981
+train,address,0.7003,0.7105,0.0102
+validation,company,0.498,0.7426,0.2447
+validation,address,0.7567,0.7819,0.0252
